@@ -14,37 +14,53 @@ library(crosstalk)
 library(lubridate)
 setModelDataDir('~/Data/BlueSky')
 ```
+## Lorem Ipsum
+ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent quis diam diam. Pellentesque vehicula at nunc vitae aliquet. Aliquam ut efficitur quam, a vehicula elit. Sed id egestas nisl. Donec id eros luctus orci pulvinar condimentum at a dolor. Etiam hendrerit neque at enim gravida tempus. Fusce fermentum congue dui ut feugiat. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis malesuada orci quis risus hendrerit, laoreet volutpat tortor mollis. Nam maximus egestas sapien, vitae tempor ante rhoncus id. Donec rhoncus maximus urna et condimentum. Aenean et sodales ipsum.
+
+## BlueSky Models
+
+* Type in desired Longitude and Latitude.
+* Select an available model for the coordinates.
+* Select a model run date. 
+* Click "Load _Model_" the model. 
+
+
 
 ```{r app}
 bscols(
-  widths = c(4, 8),
+  widths = c(3, 8),
   inputPanel(
     textInput(
       "lng", 
-      "Longitude"
+      "Longitude", 
+      width = "80%"
     ), 
     textInput(
       "lat", 
-      "Latitude"
+      "Latitude", 
+      width = "80%"
     ),
     selectizeInput(
       "model", 
       label = "Model Name",
-      choices = ""
+      choices = "", 
+      width = "80%"
     ), 
     dateInput(
       "date", 
       label = "Model Run Date", 
-      max = today()
+      max = today(), 
+      width = "80%"
     ),
     uiOutput(
       "loadLink"
     ), 
-    tags$hr(),
+    tags$br(),
     selectizeInput(
       "index", 
       "Model Hour", 
-      choices = ""
+      choices = "", 
+      width = "80%"
     )
   ), 
   plotOutput(
@@ -88,3 +104,14 @@ output$plt <- renderPlot({
 })
 ```
 
+### Quisque
+
+Quisque porttitor dui laoreet, pharetra magna a, congue mi. Integer nec vehicula ante. Phasellus faucibus odio in mi interdum auctor. Sed eget justo eu erat tincidunt ultricies id a leo. Morbi faucibus lacus vel ante viverra facilisis. Sed ullamcorper dictum egestas. Curabitur sed tortor vel arcu dictum ultrices sed scelerisque diam. Maecenas fermentum metus sit amet gravida venenatis. 
+
+### Aliquam
+
+ Quisque porttitor dignissim nibh at volutpat. Nunc risus arcu, consectetur at tortor eget, pretium tempor libero. Vivamus vitae mattis massa, at lobortis quam. Aliquam tristique ligula vitae lorem accumsan ullamcorper in a tortor. Fusce vel enim dictum, cursus nibh eget, mattis massa. Suspendisse cursus sed sapien in lacinia. Donec tempus, tortor eu congue sollicitudin, lacus dolor fringilla diam, vel malesuada nisl mi eget magna. Vestibulum at auctor risus. Aenean tincidunt maximus condimentum. In bibendum enim nec scelerisque ullamcorper.
+
+Aliquam erat volutpat. Vestibulum rhoncus, tellus vel rhoncus feugiat, nisl orci euismod nisl, vel accumsan nibh urna nec lacus. Duis orci metus, auctor sit amet erat eu, tempus molestie libero. Mauris fringilla viverra ipsum, ac dapibus nisl vehicula quis. Duis a hendrerit nisl. Mauris sit amet hendrerit metus. Vestibulum vitae feugiat sapien. Vestibulum eget pretium ipsum. Etiam sit amet faucibus dui.
+
+Phasellus justo justo, interdum et tristique et, pulvinar vel libero. Fusce cursus dui tellus, eu eleifend risus faucibus non. Pellentesque congue vel massa euismod facilisis. Sed sollicitudin velit quis velit dapibus bibendum. Ut volutpat sagittis varius. Etiam eu condimentum ipsum, a faucibus tortor. Morbi vel justo placerat, malesuada dolor id, pellentesque justo. Duis facilisis magna tellus, quis consectetur est sodales vel. Etiam ultrices nibh nec tortor malesuada hendrerit. 
