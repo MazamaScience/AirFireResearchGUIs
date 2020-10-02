@@ -1,0 +1,90 @@
+---
+title: '{AirFireModeling} BlueSky Example 1'
+author: "Mazama Science"
+date: "10/2/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(AirFireModeling)
+library(shiny)
+library(crosstalk)
+library(lubridate)
+setModelDataDir('~/Data/BlueSky')
+```
+
+```{r app}
+bscols(
+  widths = c(4, 8),
+  inputPanel(
+    textInput(
+      "lng", 
+      "Longitude"
+    ), 
+    textInput(
+      "lat", 
+      "Latitude"
+    ),
+    selectizeInput(
+      "model", 
+      label = "Model Name",
+      choices = ""
+    ), 
+    dateInput(
+      "date", 
+      label = "Model Run Date", 
+      max = today()
+    ),
+    uiOutput(
+      "loadLink"
+    ), 
+    tags$hr(),
+    selectizeInput(
+      "index", 
+      "Model Hour", 
+      choices = ""
+    )
+  ), 
+  plotOutput(
+    "plt"
+  )
+)
+
+bs <- eventReactive({ input$load }, {
+  tryCatch(raster_load(
+    modelName = input$model, 
+    modelRun = strftime(input$date, "%Y%m%d00")
+  ), error = function(err) { NULL })
+})
+
+observeEvent({ input$lng; input$lat }, {
+  bs_models <- bluesky_findModels(as.numeric(input$lng), as.numeric(input$lat))
+  updateSelectizeInput(
+    session, 
+    "model", 
+    choices = bs_models
+  )
+})
+observeEvent({  bs() }, {
+  updateSelectizeInput(
+    session,
+    "index",
+    choices = tryCatch(1:dim(bs()[[1]])[3], error = function(err) { "Error." })
+  )
+})
+
+output$loadLink <- renderUI({
+  req(input$model)
+  actionLink(
+    "load",
+    tags$h5(paste("Load", input$model))
+  )
+})
+output$plt <- renderPlot({
+  req(bs(), input$index)
+  raster_ggmap(bs(), index = as.numeric(input$index))
+})
+```
+
