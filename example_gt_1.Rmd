@@ -1,0 +1,34 @@
+---
+title: "Example {gt} Meta Table 1"
+author: "Mazama Science"
+date: "10/1/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(gt)
+library(PWFSLSmoke)
+library(lubridate)
+```
+
+```{r, echo=FALSE}
+mons <- monitor_load(startdate = today() - days(7), enddate = today())
+inputPanel(
+  selectizeInput(
+    "sensor", choices = mons$meta$siteName, label = "Sensor"
+  )
+)
+render_gt({
+  df <- mons$meta %>% filter(siteName == input$sensor)
+  gt(df) %>% 
+    tab_header(
+      title = "Sensor Metadata",
+      subtitle = paste("As of", today())
+    ) %>%  tab_options(
+    table.background.color = "lightcyan"
+  )
+})
+```
+

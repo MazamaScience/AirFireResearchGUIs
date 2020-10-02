@@ -1,0 +1,33 @@
+---
+title: "{tiotemp} Timeseries Mapping Example 1"
+author: "Mazama Science"
+date: "10/1/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tiotemp)
+library(PWFSLSmoke)
+library(lubridate)
+library(shiny)
+```
+
+```{r, echo=FALSE}
+inputPanel(
+  dateRangeInput(
+    "dom", 
+    label = "Date Range", 
+    max = today() - days(1), 
+    start = today() - days(7), 
+    end = today() - days(1)
+  )
+)
+renderTimeseriesMap({
+  mon <- monitor_load(startdate = input$dom[1], enddate = input$dom[2])
+  
+  timeseriesMap(mon$data, mon$meta, label = "siteName")
+})
+```
+
