@@ -1,0 +1,128 @@
+---
+title: 'Bluesky Viewer'
+author: "Mazama Science"
+date: "2020-10-12"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.width = 10, fig.height = 8)
+library(AirFireModeling)
+library(crosstalk)
+library(lubridate)
+library(shiny)
+setModelDataDir('~/Data/BlueSky')
+```
+
+This simple GUI provides access to plots of Bluesky model output through use of 
+the **AirFireModeling** R package.
+
+
+```{r app}
+
+# ----- UI ---------------------------------------------------------------------
+
+# Input
+inputPanel(
+  selectizeInput(
+    "model", 
+    label = "1) Model Name",
+    # choices = bluesky_modelInfo$modelName, 
+    # Hardcoded option
+    choices = c(
+      "PNW-1.33km",
+      "PNW-4km",
+      "CANSAC-1.33km",
+      "CANSAC-4km"
+    ),
+    width = "80%"
+  ), 
+  dateInput(
+    "date", 
+    label = "2) Run Date", 
+    max = today(), 
+    width = "80%"
+  ),
+  uiOutput(
+    "loadLink"
+  ),
+  # actionButton(
+  #   "load",
+  #   label = "3) Load Data"
+  # ),
+  selectizeInput(
+    "index", 
+    "4) Forecast Hour", 
+    choices = "", 
+    width = "80%"
+  )
+) # END inputPanel
+
+# textOutput(
+#   "txt"
+# )
+
+# Output
+plotOutput(
+  "plt",
+  height = "800px"
+)
+
+# ----- Server -----------------------------------------------------------------
+
+bs <- eventReactive({ input$load }, {
+  tryCatch(
+    expr = raster_load(
+      modelName = input$model, 
+      modelRun = strftime(input$date, "%Y%m%d00")
+    ), 
+    error = function(err) { NULL }
+  )
+})
+
+observeEvent({ bs() }, {
+  updateSelectizeInput(
+    session,
+    "index",
+    choices = tryCatch(
+      expr = 1:dim(bs()[[1]])[3], 
+      error = function(err) { "Error." }
+    )
+  )
+})
+
+output$loadLink <- renderUI({
+  req(input$model)
+  actionLink(
+    "load",
+    tags$h4(paste("Load", input$model)),
+    class = "load"
+  )
+})
+
+# output$load <- renderUI({
+#   req(input$model)
+#   # actionLink(
+#   #   "load",
+#   #   tags$h4(paste("Load", input$model)), 
+#   #   class = "load"
+#   # )
+# })
+
+# output$text <- renderText({ 
+#   req(bs(), input$index)
+#   dateString <- 
+#     (input$date + lubridate::dhours(as.numeric(input$index))) %>%
+#     strftime("%Y-%m-%d %H:00:00 %z", tz = "UTC")
+#   cat(dateString)
+# })
+
+output$plt <- renderPlot({
+  req(bs(), input$index)
+  raster_ggmap(bs(), index = as.numeric(input$index))
+})
+```
+
+Maps display PM2.5 values for the specific timestep.
+
