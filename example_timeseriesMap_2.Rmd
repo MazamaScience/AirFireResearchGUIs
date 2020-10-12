@@ -1,0 +1,45 @@
+---
+title: "{tiotemp} Timeseries Mapping Example 2"
+author: "Mazama Science"
+date: "10/10/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tiotemp)
+library(PWFSLSmoke)
+library(lubridate)
+library(shiny)
+```
+
+```{r, echo=FALSE}
+inputPanel(
+  selectInput(
+    "year", 
+    label = "Year", 
+    choices = c(2020, 2019, 2018, 2017, 2016)
+  ), 
+  selectInput(
+    "month", 
+    label = "Month", 
+    choices = c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
+  )
+)
+renderTimeseriesMap({
+  sd <- ymd(paste0(input$year, input$month, "01"))
+  ed <- sd + months(1)#paste0(input$year, input$month, "28")
+  
+  mon <- monitor_load(startdate = sd, enddate = ed)
+  
+  timeseriesMap(
+    mon$data, 
+    mon$meta, 
+    label = "siteName", 
+    breaks = c(12, 35.5, 55.5, 150.5, 250.5), # NOTE: PWFSLSmoke::AQI$breaks_24 w/o  +/-inf
+    colors = PWFSLSmoke::AQI$colors
+  )
+})
+```
+
