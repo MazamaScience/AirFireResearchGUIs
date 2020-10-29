@@ -1,7 +1,7 @@
 ---
 title: '{AirFireModeling} BlueSky Example 2'
 author: "Mazama Science"
-date: "10/2/2020"
+date: "10/10/2020"
 output: html_document
 runtime: shiny
 ---
