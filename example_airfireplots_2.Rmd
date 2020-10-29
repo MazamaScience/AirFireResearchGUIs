@@ -71,7 +71,7 @@ bscols(
     )
   ),
   renderPlot({
-    plot_base(                                # 1. Base plot
+    plot_base(                                
       title = "PNW Elevation",
       xlab = "Longitude",
       ylab = "Latitude",
@@ -80,11 +80,11 @@ bscols(
       xlim = xlim, 
       ylim = ylim
     ) +                        
-      layer_raster(                             # 2. Raster layer
+      layer_raster(                             
         raster = example_wrf,
         varName = "HGT"
       ) +
-      ggplot2::scale_fill_gradientn(            # 3. Fill scale
+      ggplot2::scale_fill_gradientn(            
         colors = grDevices::terrain.colors(10),
         na.value = "transparent"
       ) + 
