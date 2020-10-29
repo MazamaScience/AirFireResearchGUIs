@@ -1,0 +1,100 @@
+---
+title: "{AirFirePlots} Composite Layering Example 1"
+author: "Mazama Science"
+date: "10/28/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r libs, inlcude=FALSE}
+library(AirFirePlots)
+library(raster)
+library(shiny)
+library(ggplot2)
+library(crosstalk)
+```
+
+```{r loading}
+AirFireModeling::setModelDataDir("~/Data/BlueSky")
+# Extent of Washington state
+xlimWa <- c(-125, -117)
+ylimWa <- c(45.5, 49)
+# Load BlueSky model run
+rasterList <- AirFireModeling::raster_load(
+  modelName = "PNW-4km",
+  modelRun = 2020071400,
+  xlim = xlimWa,
+  ylim = ylimWa,
+  verbose = FALSE
+)
+# Extract a single RasterLayer from the BlueSky run RasterBrick
+smokeRaster <- rasterList$`PNW-4km_2020071400`$X1020.07.15.19.00.00
+```
+
+```{r plot}
+bscols(
+  widths = c(2, 10),
+  inputPanel(
+  tags$h5("Select Layers"),
+    checkboxInput(
+      "raster", 
+      label = "Raster", 
+      value = FALSE
+    ),
+    checkboxInput(
+      "state", 
+      label = "State", 
+      value = FALSE
+    ),
+    checkboxInput(
+      "vec", 
+      label = "Vector Field", 
+      value = FALSE
+    )
+  ),
+  renderPlot({
+    plot_base(
+      title = "PNW Air Quality and Wind",
+      xlab = "Longitude",
+      ylab = "Latitude",
+      flab = "PM 2.5 (ug/m3)",
+      xlim = xlimWa,
+      ylim = ylimWa,
+      ratio = 1.4
+    ) +
+      (if (input$raster) {
+        layer_raster(raster = smokeRaster, breaks = c(0, 1, 2, 5, 10, 25, 50, 100, Inf))
+      } else {
+        geom_blank()
+      }) + 
+      (if (input$state) {
+        layer_states(xlim = xlimWa, ylim = ylimWa, color = "black")
+      } else {
+        geom_blank()
+      }) + 
+      (if (input$vec) {
+        layer_vectorField(
+          raster = example_wrf,
+          uName = "U10",
+          vName = "V10",
+          arrowCount = 800,
+          arrowWidth = 0.8,
+          arrowColor = "blue",
+          xlim = xlimWa,
+          ylim = ylimWa
+        )
+      } else {
+        geom_blank()
+      }) + 
+      ggplot2::scale_fill_brewer(
+        palette = "Spectral",
+        na.value = "transparent"
+      )
+  })
+)
+```
+
