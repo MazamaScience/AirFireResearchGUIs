@@ -1,0 +1,133 @@
+---
+title: "{AirFirePlots} Composite Layering Example 2"
+author: "Mazama Science"
+date: "10/28/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r libs, inlcude=FALSE}
+library(AirFirePlots)
+library(raster)
+library(shiny)
+library(ggplot2)
+library(crosstalk)
+```
+
+```{r loading}
+AirFireModeling::setModelDataDir("~/Data/BlueSky")
+# Extent of Washington state
+xlimWa <- c(-125, -117)
+ylimWa <- c(45.5, 49)
+# Load BlueSky model run
+rasterList <- AirFireModeling::raster_load(
+  modelName = "PNW-4km",
+  modelRun = 2020071400,
+  xlim = xlimWa,
+  ylim = ylimWa,
+  verbose = FALSE
+)
+# Extract a single RasterLayer from the BlueSky run RasterBrick
+smokeRaster <- rasterList$`PNW-4km_2020071400`$X1020.07.15.19.00.00
+
+xlim <- c(example_wrf@extent@xmin, example_wrf@extent@xmax)
+ylim <- c(example_wrf@extent@ymin, example_wrf@extent@ymax)
+
+dummyData <- data.frame(
+  x = runif(100, min = xlim[1], max = xlim[2]),
+  y = runif(100, min = ylim[1], max = ylim[2]),
+  value = runif(100, min = 0, max = 25)
+)
+```
+
+```{r plot}
+bscols(
+  widths = c(2, 10),
+  inputPanel(
+    tags$h5("Select Layers"),
+    checkboxInput(
+      "state", 
+      label = "States", 
+      value = FALSE
+    ),
+    checkboxInput(
+      "county", 
+      label = "Counties", 
+      value = FALSE
+    ),
+    checkboxInput(
+      "contour", 
+      label = "Countours", 
+      value = FALSE
+    ), 
+    checkboxInput(
+      "points", 
+      label = "Points", 
+      value = FALSE
+    )
+  ),
+  renderPlot({
+    plot_base(                                # 1. Base plot
+      title = "PNW Elevation",
+      xlab = "Longitude",
+      ylab = "Latitude",
+      flab = "Elev (m)",
+      ratio = 1.4, 
+      xlim = xlim, 
+      ylim = ylim
+    ) +                        
+      layer_raster(                             # 2. Raster layer
+        raster = example_wrf,
+        varName = "HGT"
+      ) +
+      ggplot2::scale_fill_gradientn(            # 3. Fill scale
+        colors = grDevices::terrain.colors(10),
+        na.value = "transparent"
+      ) + 
+      (if ( input$state ) {
+        layer_states(
+          xlim = xlim,
+          ylim = ylim
+        )
+      } else {
+        geom_blank()
+      }) +
+      (if ( input$county ) {
+        layer_counties(
+          xlim = xlim,
+          ylim = ylim,
+          lineWidth = 0.3,
+          color = "gray40"
+        )
+      } else {
+        geom_blank()
+      }) + 
+      (if ( input$contour ) {
+        layer_contours(
+          raster = example_wrf,
+          varName = "HGT",
+          breaks = c(500, 1000, 1500, 2000, 2500),
+          lineWidth = 0.4,
+          color = "gray40"
+        ) 
+      } else {
+        geom_blank()
+      }) + 
+      (if ( input$points ) {
+        layer_points(
+          points = dummyData,
+          size = 3,
+          lineWidth = 1,
+          shape = 16
+        )
+      } else {
+        
+      })
+  })
+)
+```
+
