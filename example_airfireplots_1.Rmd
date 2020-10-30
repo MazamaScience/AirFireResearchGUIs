@@ -11,11 +11,15 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ```{r libs, inlcude=FALSE}
-library(AirFirePlots)
-library(raster)
-library(shiny)
-library(ggplot2)
-library(crosstalk)
+suppressPackageStartupMessages({
+  library(ncdf4)
+  library(raster)
+  library(shiny)
+  library(ggplot2)
+  library(crosstalk)
+  library(AirFireWRF)
+  library(AirFirePlots)
+})
 ```
 
 ```{r loading}
