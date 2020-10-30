@@ -10,7 +10,7 @@ runtime: shiny
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-```{r libs, inlcude=FALSE}
+```{r libs, inlcude=FALSE, message=FALSE}
 library(AirFirePlots)
 library(raster)
 library(shiny)
@@ -93,8 +93,6 @@ bscols(
           xlim = xlim,
           ylim = ylim
         )
-      } else {
-        geom_blank()
       }) +
       (if ( input$county ) {
         layer_counties(
@@ -103,8 +101,6 @@ bscols(
           lineWidth = 0.3,
           color = "gray40"
         )
-      } else {
-        geom_blank()
       }) + 
       (if ( input$contour ) {
         layer_contours(
@@ -114,8 +110,6 @@ bscols(
           lineWidth = 0.4,
           color = "gray40"
         ) 
-      } else {
-        geom_blank()
       }) + 
       (if ( input$points ) {
         layer_points(
@@ -124,8 +118,6 @@ bscols(
           lineWidth = 1,
           shape = 16
         )
-      } else {
-        
       })
   })
 )

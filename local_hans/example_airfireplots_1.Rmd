@@ -10,7 +10,7 @@ runtime: shiny
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-```{r libs, inlcude=FALSE}
+```{r libs, inlcude=FALSE, message=FALSE}
 library(AirFirePlots)
 library(raster)
 library(shiny)
@@ -68,13 +68,9 @@ bscols(
     ) +
       (if (input$raster) {
         layer_raster(raster = smokeRaster, breaks = c(0, 1, 2, 5, 10, 25, 50, 100, Inf))
-      } else {
-        geom_blank()
       }) + 
       (if (input$state) {
         layer_states(xlim = xlimWa, ylim = ylimWa, color = "black")
-      } else {
-        geom_blank()
       }) + 
       (if (input$vec) {
         layer_vectorField(
@@ -87,8 +83,6 @@ bscols(
           xlim = xlimWa,
           ylim = ylimWa
         )
-      } else {
-        geom_blank()
       }) + 
       ggplot2::scale_fill_brewer(
         palette = "Spectral",
