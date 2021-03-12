@@ -32,7 +32,7 @@ rasterList <- AirFireModeling::raster_load(
   verbose = FALSE
 )
 # Extract a single RasterLayer from the BlueSky run RasterBrick
-smokeRaster <- rasterList$`PNW-4km_2020071400`$X1020.07.15.19.00.00
+smokeRaster <- rasterList$`PNW-4km_2020071400`$X1594688400
 ```
 
 ```{r plot}
