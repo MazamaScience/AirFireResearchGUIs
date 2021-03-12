@@ -1,0 +1,134 @@
+---
+title: "AFM_dashboard"
+author: "Mazama Science"
+date: "3/10/2021"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(AirFireModeling)
+library(shiny)
+library(crosstalk)
+library(lubridate)
+```
+
+```{r model_date_panel}
+setModelDataDir('~/Data/BlueSky')
+inputPanel(
+    selectizeInput(
+      "model", 
+      label = "Model Name",
+      choices = bluesky_modelInfo$modelName, 
+      width = "100%"
+    ), 
+    dateInput(
+      "date", 
+      label = "Model Run Date", 
+      max = today(), 
+      width = "100%"
+    ), shiny::fillCol(),
+    uiOutput(
+      "loadLink"
+    )  
+  )
+```
+
+```{r backend}
+bs <- eventReactive({ input$load }, {
+  tryCatch(raster_load(
+    modelName = input$model, 
+    modelRun = strftime(input$date, "%Y%m%d00")
+  ), error = function(err) { NULL })
+})
+
+observeEvent({  bs() }, {
+  updateSelectizeInput(
+    session,
+    "index",
+    choices = tryCatch(1:dim(bs()[[1]])[3], error = function(err) { "Error." })
+  )
+  
+  data <- bs()
+})
+
+output$loadLink <- renderUI({
+  req(input$model)
+  shiny::actionButton(
+    inputId = "load",
+    label = tags$h4(paste("Load", input$model))
+  )
+})
+```
+
+```{r main_panel}
+bscols(
+  widths = c(3, 9),
+  inputPanel(
+  selectizeInput(
+    "index",
+    "Model Slice",
+    choices = "",
+    width = "80%"
+    )
+  ), 
+  shiny::div(id = "map")
+)
+```
+
+```{r ext_libs}
+shiny::includeCSS("https://unpkg.com/leaflet@1.7.1/dist/leaflet.css")
+shiny::includeScript("https://unpkg.com/leaflet@1.7.1/dist/leaflet.js")
+# htmltools::tagList(
+shiny::includeScript("https://ihcantabria.github.io/Leaflet.CanvasLayer.Field/dist/leaflet.canvaslayer.field.js")
+shiny::includeScript("https://d3js.org/d3.v5.min.js")
+```
+
+```{css}
+#map {
+  width: 100%;
+  height: 800px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+```
+
+```{js}
+// Basemap
+var map = L.map("map").setView([51.505, -0.09], 13);
+var url = "http://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png";
+L.tileLayer(url, {
+  attribution: "OSM & Carto",
+  subdomains: "abcd",
+  maxZoom: 19
+}).addTo(map);
+
+
+// Vector field
+var url_u = "https://ihcantabria.github.io/Leaflet.CanvasLayer.Field/data/Bay_U.asc";
+var url_v = "https://ihcantabria.github.io/Leaflet.CanvasLayer.Field/data/Bay_V.asc";
+var urls = [url_u, url_v];
+var promises = urls.map(url => fetch(url).then(r => r.text()));
+Promise.all(promises).then(function (arrays) {
+  let vf = L.VectorField.fromASCIIGrids(arrays[0], arrays[1]);
+  let layer = L.canvasLayer.vectorFieldAnim(vf).addTo(map);
+  map.fitBounds(layer.getBounds());
+
+  layer.on('click', function(e) {
+    if (e.value !== null) {
+      let vector = e.value;
+      let v = vector.magnitude().toFixed(2);
+      let d = vector.directionTo().toFixed(0);
+      let html = (`${v} m/s to ${d}&deg`);
+      let popup = L.popup()
+      .setLatLng(e.latlng)
+      .setContent(html)
+      .openOn(map);
+    }
+  });
+});
+
+```
