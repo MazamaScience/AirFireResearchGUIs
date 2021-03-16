@@ -1,0 +1,103 @@
+---
+title: "AFM_dash3"
+author: "Mazama Science"
+date: "3/15/2021"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(AirFireModeling)
+library(shiny)
+library(crosstalk)
+library(lubridate)
+library(leaflet)
+```
+
+```{r model_date_panel}
+setModelDataDir('~/Data/BlueSky')
+inputPanel(
+    selectizeInput(
+      "model", 
+      label = "Model Name",
+      choices = bluesky_modelInfo$modelName, 
+      width = "100%"
+    ), 
+    dateInput(
+      "date", 
+      label = "Model Run Date", 
+      max = today(), 
+      width = "100%"
+    ), shiny::fillCol(),
+    uiOutput(
+      "loadLink"
+    )  
+  )
+```
+
+```{r backend}
+bs <- eventReactive({ input$load }, {
+  
+  tryCatch(raster_load(
+    modelName = input$model, 
+    modelRun = strftime(input$date, "%Y%m%d00")
+  ), error = function(err) { NULL })
+  
+})
+
+observeEvent({  bs() }, {
+  
+  updateSliderInput(
+    session,
+    "index",
+    max = tryCatch(dim(bs()[[1]])[3], error = function(err) { "Error." })
+  )
+
+})
+
+observe({
+  
+  layer <- bs()[[1]][[as.numeric(input$index)]]
+  pal <- colorNumeric(c("transparent", "#8F8172", "#675C58", "#2E2D2B", "#B19778", "#7D3540"), raster::values(layer),
+  na.color = "transparent")
+  
+    leafletProxy("map") %>%
+    removeImage("raster") %>%
+    addRasterImage(layer, layerId = "raster", colors = pal, opacity = 0.5)
+  
+})
+
+output$loadLink <- renderUI({
+  
+  req(input$model)
+  shiny::actionButton(
+    inputId = "load",
+    label = tags$h4(paste("Load", input$model))
+  ) 
+  
+})
+
+output$map <- renderLeaflet({
+  
+ leaflet() %>%
+  addTiles() 
+  
+})
+```
+
+```{r main_panel, message=FALSE}
+leafletOutput(outputId = "map")
+
+sliderInput(
+  "index", 
+  "Slice", 
+  min = 1, 
+  max = 4,
+  value = 1, 
+  step = 1, 
+  width = "100%", 
+  animate = TRUE
+)
+```
