@@ -33,20 +33,11 @@ setWRFDataDir('~/Data/WRF')
 ```{css, echo = FALSE}
 
 .btn {
-  # margin-left: 80%;
   background-color: whitesmoke;
 }
 
 .btn#opts_bt {
   margin-top: 12%
-}
-
-.btn#fwd { 
-  # margin-left: 60%;
-}
-
-.btn#prv { 
-  # margin-left: 40%;
 }
 
 #shiny-notification-panel {
