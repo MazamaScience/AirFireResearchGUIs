@@ -10,21 +10,19 @@ runtime: shiny
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
-library(AirFireModeling)
+# library(AirFireModeling)
 library(shiny)
-library(crosstalk)
+# library(crosstalk)
 library(lubridate)
-library(leaflet)
-library(gt)
-library(MazamaSpatialUtils)
+# library(leaflet)
+# library(gt)
+# library(MazamaSpatialUtils)
 
 
 library(MazamaSpatialUtils)
 library(AirFireModeling)
 library(AirFireWRF)
 library(AirFirePlots)
-
-
 
 PWFSLSmoke::initializeMazamaSpatialUtils()
 MazamaSpatialUtils::setSpatialDataDir("~/Data/Spatial")
@@ -35,12 +33,24 @@ setWRFDataDir('~/Data/WRF')
 ```{css, echo = FALSE}
 
 .btn {
-  margin-left: 80%;
+  # margin-left: 80%;
   background-color: whitesmoke;
 }
 
 .btn#opts_bt {
   margin-top: 12%
+}
+
+.btn#fwd { 
+  # margin-left: 60%;
+}
+
+.btn#prv { 
+  # margin-left: 40%;
+}
+
+#shiny-notification-panel {
+  top: 1%; 
 }
 
 ```
@@ -70,20 +80,18 @@ inputPanel(
       "PNW-4km",
       "CANSAC-1.33km",
       "CANSAC-4km"
-    ),
-      width = "100%"
+      ), 
+      selected = "PNW-4km"
     ), 
     dateInput(
       "date", 
       label = "Model Run Date", 
-      max = today(), 
-      width = "100%"
+      max = today()
     ), 
-      selectizeInput(
+    selectizeInput(
     "index", 
     "4) Forecast Slice", 
-    choices = "", 
-    width = "80%"
+    choices = ""
     ),
     actionButton(
       "opts_bt", 
@@ -95,7 +103,7 @@ inputPanel(
 
 inputPanel(
   checkboxGroupInput(
-    "options", 
+    "plt_opts", 
     "Plot Options",
     choices = c(
       "State Boundaries", 
@@ -103,41 +111,75 @@ inputPanel(
       "Scalar Field", 
       "Vector Field"
     ), 
+    selected = c(
+      "State Boundaries", 
+      "Scalar Field", 
+      "Vector Field"
+    )
+  ),
+  selectizeInput(
+    "z_wrf",
+    "WRF Slice", 
+    choices = 1:72, 
+    selected = 8
   ), 
   id = "opts_menu"
 )
 
 uiOutput("loadLink")  
     
-plotOutput("plot")
+plotOutput("plot", width = "100%", height = "800px")
 
-gt_output("table")
+actionButton(
+  "prv", 
+  "", 
+  icon = icon("arrow-circle-left")
+)
+
+actionButton(
+  "fwd", 
+  "", 
+  icon = icon("arrow-circle-right")
+)
+
 
 # # # End UI def
 # # # Begin Logic
 
+index <- eventReactive({ input$index }, { return(as.numeric(input$index)) })
+
+options <- eventReactive({ input$plt_opts }, { return(input$plt_opts) })
+
 meta <- eventReactive({ input$load }, {
+  
   bluesky_modelInfo  %>% 
     dplyr::filter(.data$modelName == input$model)
+
 })
 
 bs <- eventReactive({ input$load }, {
+  
+  p <- Progress$new()
+  p$set(message = "Loading Bluesky model...")
+  on.exit(p$close())
   
   raster <- tryCatch(raster_load(
     modelName = input$model, 
     modelRun = strftime(input$date, "%Y%m%d00")
   ), error = function(err) { NULL })
 
-
-  
   return(raster)
   
 })
 
 wrf <- eventReactive({ input$load }, {
   
+  p <- Progress$new()
+  p$set(message = "Loading WRF model...")
+  on.exit(p$close())
+  
   # WRF-only parameters
-  modelRunHour <- 24
+  modelRunHour <- input$z_wrf#8
   varNames <- c("U10", "V10")   #  Wind vector components
   res <- 0.1                    # Use res = 0.1 for state-sized regions
   
@@ -158,9 +200,7 @@ wrf <- eventReactive({ input$load }, {
   
 })
 
-index <- eventReactive({ input$index }, {
-  return(as.numeric(input$index))
-})
+
 
 observeEvent({ input$load }, {
   
@@ -175,13 +215,30 @@ observeEvent({ input$load }, {
   
 })
 
-options <- eventReactive({ input$options }, {
-  return(input$options)
+observeEvent({ input$fwd }, {
+  
+  updateSelectizeInput(
+    session,
+    "index",
+    selected = ifelse(index() < dim(bs()[[1]])[3], index() + 1, index())
+  )
+  
+})
+
+observeEvent({ input$prv }, {
+  
+  updateSelectizeInput(
+    session,
+    "index",
+    selected = ifelse(index() > 1, index() - 1, index())
+  )
+  
 })
 
 output$loadLink <- renderUI({
   
   req(input$model)
+  
   actionButton(
     inputId = "load",
     label = tags$h4(paste("Load", input$model))
@@ -193,12 +250,13 @@ output$plot <- renderPlot({
   
   req(meta(), bs(), wrf(), index())
   
+  p <- Progress$new()
+  p$set(message = "Loading Plot...")
+  on.exit(p$close())
+  
   meta <- meta()
-  
   bs_raster <- bs()[[1]]
-  
   wrf_raster <- wrf()
-  
   
   xlim <- c(meta[['MIN_LONGITUDE']], meta[['MAX_LONGITUDE']])
   ylim <- c(meta[['MIN_LATITUDE']], meta[['MAX_LATITUDE']])
@@ -210,44 +268,39 @@ output$plot <- renderPlot({
     ylim = ylim, 
     ratio = 1.4
   ) + 
-    (if ( "Scalar Field" %in% options() ) {
-      layer_raster(
-        raster = bs_raster[[index()]], 
-        breaks = c(0, 1, 2, 5, 10, 25, 50, 100, Inf)
-      ) 
-    })+ 
-    (if ( "County Boundaries" %in% options() ) {
-      layer_counties(
-        fill = "transparent", 
-        xlim = xlim,
-        ylim = ylim
-      )
-    }) + 
-    (if ( "State Boundaries" %in% options() ) { 
-      layer_states(
-        xlim = xlim, 
-        ylim = ylim
-      )
-    }) + 
-    (if ( "Vector Field" %in% options() ) { 
-      layer_vectorField(
-        raster = wrf_raster, 
-        uName = "U10", 
-        vName = "V10"
-      )
-    }) + 
-    ggplot2::scale_fill_brewer(
+  (if ( "Scalar Field" %in% options() ) {
+    layer_raster(
+      raster = bs_raster[[index()]], 
+      breaks = c(0, 1, 2, 5, 10, 25, 50, 100, Inf)
+    ) 
+  }) + 
+  (if ( "County Boundaries" %in% options() ) {
+    layer_counties(
+      fill = "transparent", 
+      xlim = xlim,
+      ylim = ylim
+    )
+  }) + 
+  (if ( "State Boundaries" %in% options() ) { 
+    layer_states(
+      xlim = xlim, 
+      ylim = ylim
+    )
+  }) + 
+  (if ( "Vector Field" %in% options() ) { 
+    layer_vectorField(
+      raster = wrf_raster, 
+      uName = "U10", 
+      vName = "V10"
+    )
+  }) + 
+  ggplot2::scale_fill_brewer(
     palette = "Greys",
     na.value = "transparent"
   )
-  
+
   return(g)
 
 })
 
-# output$table <- render_gt({
-#   req(bs(), coords())
-#   df <- raster_toMonitor(bs()[[1]][[input$index]], coords()$lng, coords()$lat)
-#   gt(df$data)
-# })
 ```
