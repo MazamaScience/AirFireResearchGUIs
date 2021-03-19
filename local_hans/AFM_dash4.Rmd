@@ -50,7 +50,10 @@ setWRFDataDir('~/Data/WRF')
 }
 
 #shiny-notification-panel {
-  top: 1%; 
+  position:fixed;
+  top: 1%;
+  left: calc(50%);
+  right: calc(50%);
 }
 
 ```
