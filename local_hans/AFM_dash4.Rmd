@@ -10,15 +10,8 @@ runtime: shiny
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
-# library(AirFireModeling)
 library(shiny)
-# library(crosstalk)
 library(lubridate)
-# library(leaflet)
-# library(gt)
-# library(MazamaSpatialUtils)
-
-
 library(MazamaSpatialUtils)
 library(AirFireModeling)
 library(AirFireWRF)
