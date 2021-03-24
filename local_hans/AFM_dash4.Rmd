@@ -1,5 +1,5 @@
 ---
-title: "AFM_dash4"
+title: "Bluesky Inspector"
 author: "Mazama Science"
 date: "3/17/2021"
 output: html_document
@@ -29,6 +29,10 @@ setWRFDataDir('~/Data/WRF')
   background-color: whitesmoke;
 }
 
+.btn#load {
+  margin-top: 6%; 
+}
+
 .btn#opts_bt {
   margin-top: 12%;
 }
@@ -36,8 +40,6 @@ setWRFDataDir('~/Data/WRF')
 #shiny-notification-panel {
   position:fixed;
   top: 1%;
-  left: calc(50%);
-  right: calc(50%);
 }
 
 ```
@@ -75,16 +77,12 @@ inputPanel(
       label = "Model Run Date", 
       max = today()
     ), 
-    selectizeInput(
-    "index", 
-    "4) Forecast Slice", 
-    choices = ""
-    ),
     actionButton(
       "opts_bt", 
       "", 
       icon = icon("cog")
     ), 
+    uiOutput("loadLink"),
     id = "main"
   )
 
@@ -105,6 +103,11 @@ inputPanel(
     )
   ),
   selectizeInput(
+    "index", 
+    "Bluesky Slice", 
+    choices = ""
+    ),
+  selectizeInput(
     "z_wrf",
     "WRF Slice", 
     choices = 1:72, 
@@ -113,13 +116,13 @@ inputPanel(
   id = "opts_menu"
 )
 
-uiOutput("loadLink")  
-    
+tags$hr()
+
 plotOutput("plot", width = "100%", height = "800px", click = "plot_click")
 
 actionButton(
   "prv", 
-  "", 
+  "",
   icon = icon("arrow-circle-left")
 )
 
@@ -163,14 +166,14 @@ bs <- eventReactive({ input$load }, {
   
 })
 
-wrf <- eventReactive({ input$load }, {
+wrf <- eventReactive({ input$load; input$z_wrf }, {
   
   p <- Progress$new()
   p$set(message = "Loading WRF model...")
   on.exit(p$close())
   
   # WRF-only parameters
-  modelRunHour <- input$z_wrf#8
+  modelRunHour <- input$z_wrf
   varNames <- c("U10", "V10")   #  Wind vector components
   res <- 0.1                    # Use res = 0.1 for state-sized regions
   
@@ -288,7 +291,9 @@ output$plot <- renderPlot({
   ggplot2::scale_fill_brewer(
     palette = "Greys",
     na.value = "transparent"
-  )
+  ) + 
+  ggplot2::ggtitle(raster_getTime(bs_raster)[[index()]]) + 
+  ggplot2::theme_minimal()
 
   return(g)
 
@@ -303,7 +308,13 @@ coords <- eventReactive({ input$plot_click }, {
 output$subplot <- renderPlot({
   
   req(bs(), coords())
-  raster_spaghettiPlot(bs(), coords()$lng, coords()$lat)
+  
+  p <- Progress$new()
+  p$set(message = "Loading Location Plot...")
+  on.exit(p$close())
+  
+  raster_spaghettiPlot(bs(), coords()$lng, coords()$lat) + 
+  ggplot2::theme_minimal()
   
 })
 
